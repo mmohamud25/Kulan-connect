@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KI Connect</title>
+  <title>KI Connect — Sign In</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/config.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -26,9 +25,10 @@
       --text2:    #7a94aa;
       --red:      #e05252;
       --red-lo:   rgba(224,82,82,.1);
+      --red-br:   rgba(224,82,82,.25);
       --green:    #37c27a;
       --green-lo: rgba(55,194,122,.1);
-      --radius:   11px;
+      --green-br: rgba(55,194,122,.25);
     }
 
     html, body {
@@ -40,7 +40,6 @@
       line-height: 1.5;
     }
 
-    /* Subtle grid background */
     body::before {
       content: '';
       position: fixed; inset: 0; z-index: 0;
@@ -48,45 +47,39 @@
         linear-gradient(var(--line) 1px, transparent 1px),
         linear-gradient(90deg, var(--line) 1px, transparent 1px);
       background-size: 52px 52px;
-      opacity: .35;
+      opacity: .3;
       pointer-events: none;
     }
 
     .page {
       position: relative; z-index: 1;
       min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr;
-      place-items: center;
-      padding: 40px 20px;
-    }
-
-    .wrap {
-      width: 100%;
-      max-width: 400px;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      gap: 24px;
     }
 
-    /* Logo */
+    /* ── Logo ── */
     .logo {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       text-align: center;
     }
 
-    .logo__mark {
-      width: 48px; height: 48px;
-      border-radius: 13px;
+    .logo__icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
       background: var(--accent-lo);
       border: 1px solid var(--accent-br);
       display: flex; align-items: center; justify-content: center;
     }
 
-    .logo__mark svg { width: 24px; height: 24px; }
+    .logo__icon svg { width: 26px; height: 26px; }
 
     .logo__name {
       font-family: 'Syne', sans-serif;
@@ -95,27 +88,25 @@
       letter-spacing: -.3px;
     }
 
-    .logo__name em {
-      font-style: normal;
-      color: var(--accent);
-    }
+    .logo__name em { font-style: normal; color: var(--accent); }
 
-    .logo__sub {
+    .logo__tagline {
       font-size: 13px;
       color: var(--text2);
     }
 
-    /* Card */
+    /* ── Card / view ── */
     .card {
+      width: 100%;
+      max-width: 390px;
       background: var(--surface);
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 28px;
     }
 
-    .card__head {
-      margin-bottom: 22px;
-    }
+    .view { display: none; }
+    .view.active { display: block; }
 
     .card__title {
       font-family: 'Syne', sans-serif;
@@ -127,41 +118,56 @@
     .card__sub {
       font-size: 13px;
       color: var(--text2);
+      margin-bottom: 22px;
     }
 
-    /* Banner alerts */
+    /* ── Banner ── */
     .banner {
       display: none;
       padding: 10px 14px;
       border-radius: 8px;
       font-size: 13px;
+      line-height: 1.5;
       margin-bottom: 16px;
-      line-height: 1.45;
     }
 
-    .banner--err  { display: block; background: var(--red-lo);   border: 1px solid rgba(224,82,82,.25);   color: #f08080; }
-    .banner--ok   { display: block; background: var(--green-lo); border: 1px solid rgba(55,194,122,.25); color: #6dda9f; }
+    .banner.err {
+      display: block;
+      background: var(--red-lo);
+      border: 1px solid var(--red-br);
+      color: #f08080;
+    }
 
-    /* Fields */
+    .banner.ok {
+      display: block;
+      background: var(--green-lo);
+      border: 1px solid var(--green-br);
+      color: #6dda9f;
+    }
+
+    /* ── Fields ── */
     .field { margin-bottom: 14px; }
 
-    .field__label {
+    .field__top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .field label {
+      font-size: 11px;
       font-weight: 600;
       color: var(--text2);
       text-transform: uppercase;
       letter-spacing: .5px;
-      margin-bottom: 7px;
     }
 
     .field__input {
       width: 100%;
       background: var(--bg);
       border: 1.5px solid var(--line);
-      border-radius: var(--radius);
+      border-radius: 10px;
       padding: 11px 13px;
       color: var(--text);
       font-family: 'Inter', sans-serif;
@@ -175,150 +181,135 @@
       box-shadow: 0 0 0 3px var(--accent-lo);
     }
 
-    .field__input--err {
-      border-color: rgba(224,82,82,.5) !important;
+    .field__input.err {
+      border-color: var(--red-br) !important;
     }
 
-    .field__input::placeholder { color: var(--text2); opacity: .6; }
+    .field__input::placeholder { color: var(--text2); opacity: .55; }
 
     .field__err {
-      display: block;
       font-size: 12px;
       color: var(--red);
       margin-top: 5px;
+      display: none;
     }
 
-    .field__hint {
-      font-size: 11px;
-      color: var(--text2);
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      transition: color .15s;
-      font-family: 'Inter', sans-serif;
-    }
+    .field__err.visible { display: block; }
 
-    .field__hint:hover { color: var(--accent); }
+    /* Password with toggle */
+    .pwd-wrap { position: relative; }
+    .pwd-wrap .field__input { padding-right: 44px; }
 
-    /* Password wrapper — show/hide toggle */
-    .pwd-wrap {
-      position: relative;
-    }
-
-    .pwd-wrap .field__input {
-      padding-right: 42px;
-    }
-
-    .pwd-toggle {
+    .pwd-eye {
       position: absolute;
       right: 12px; top: 50%;
       transform: translateY(-50%);
       background: none; border: none;
       cursor: pointer; color: var(--text2);
       display: flex; align-items: center;
-      transition: color .15s;
       padding: 4px;
+      transition: color .15s;
     }
 
-    .pwd-toggle:hover { color: var(--text); }
-    .pwd-toggle svg { width: 16px; height: 16px; }
+    .pwd-eye:hover { color: var(--text); }
+    .pwd-eye svg { width: 16px; height: 16px; }
 
-    /* Buttons */
+    /* ── Buttons ── */
     .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 100%;
       padding: 12px 16px;
       border: none;
-      border-radius: var(--radius);
+      border-radius: 10px;
       font-family: 'Syne', sans-serif;
       font-size: 14px;
       font-weight: 700;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: background .15s, transform .1s, opacity .15s;
+      transition: background .15s, opacity .15s, transform .1s;
       margin-top: 6px;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
     }
 
-    .btn--primary {
+    .btn-primary {
       background: var(--accent);
       color: #06111d;
     }
 
-    .btn--primary:hover:not(:disabled) { background: var(--accent-h); }
-    .btn--primary:active:not(:disabled) { transform: scale(.98); }
-
-    .btn--ghost {
-      background: transparent;
-      color: var(--text2);
-      border: 1px solid var(--line);
-      font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      margin-top: 0;
-    }
-
-    .btn--ghost:hover:not(:disabled) { border-color: var(--line2); color: var(--text); }
+    .btn-primary:hover:not(:disabled) { background: var(--accent-h); }
+    .btn-primary:active:not(:disabled) { transform: scale(.98); }
 
     .btn:disabled {
-      opacity: .5;
+      opacity: .55;
       cursor: not-allowed;
     }
 
-    /* Spinner inside button */
-    .btn[data-loading="1"]::before {
-      content: '';
-      width: 15px; height: 15px;
-      border: 2px solid rgba(6,17,29,.3);
+    /* Spinner — shown by adding .loading class to button */
+    .btn .btn-label { transition: opacity .15s; }
+
+    .btn .btn-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(6,17,29,.25);
       border-top-color: #06111d;
       border-radius: 50%;
       animation: spin .65s linear infinite;
+      flex-shrink: 0;
     }
 
-    .btn--ghost[data-loading="1"]::before {
-      border-color: var(--line2);
-      border-top-color: var(--text);
-    }
-
-    .btn[data-loading="1"] .btn__label { display: none; }
+    .btn.loading .btn-label { display: none; }
+    .btn.loading .btn-spinner { display: block; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* Link-style button */
+    .link-btn {
+      background: none;
+      border: none;
+      font-size: 11px;
+      color: var(--accent);
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      padding: 0;
+      transition: opacity .15s;
+    }
+
+    .link-btn:hover { opacity: .7; }
+
     /* Back link */
-    .back-link {
+    .back-btn {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+      background: none;
+      border: none;
       font-size: 13px;
       color: var(--text2);
       cursor: pointer;
-      background: none; border: none;
-      transition: color .15s;
+      font-family: 'Inter', sans-serif;
       padding: 0;
       margin-bottom: 18px;
-      font-family: 'Inter', sans-serif;
+      transition: color .15s;
     }
 
-    .back-link:hover { color: var(--text); }
-    .back-link svg { width: 14px; height: 14px; }
+    .back-btn:hover { color: var(--text); }
+    .back-btn svg { width: 14px; height: 14px; }
 
-    /* Views */
-    .view { display: none; }
-    .view--active { display: block; }
-
-    /* Footer */
+    /* ── Footer ── */
     .page-footer {
-      text-align: center;
       font-size: 12px;
       color: var(--text2);
-      line-height: 1.7;
+      text-align: center;
+      line-height: 1.8;
     }
 
     .page-footer a { color: var(--accent); text-decoration: none; }
-    .page-footer a:hover { text-decoration: underline; }
 
-    /* Toast */
+    /* ── Toast ── */
     .toast {
       position: fixed;
       bottom: 24px; left: 50%;
@@ -326,332 +317,447 @@
       background: var(--surface2);
       border: 1px solid var(--line2);
       border-radius: 50px;
-      padding: 10px 20px;
+      padding: 9px 20px;
       font-size: 13px;
       color: var(--text);
+      white-space: nowrap;
       box-shadow: 0 8px 30px rgba(0,0,0,.4);
       opacity: 0;
       transition: opacity .25s, transform .25s;
       z-index: 999;
-      white-space: nowrap;
+      pointer-events: none;
     }
 
-    .toast--show {
+    .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
-
-    .toast .toast__msg { /* just a wrapper */ }
   </style>
 </head>
 <body>
 <div class="page">
-  <div class="wrap">
 
-    <!-- Logo -->
-    <div class="logo">
-      <div class="logo__mark">
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="4" fill="#19c6be"/>
-          <circle cx="12" cy="12" r="8" stroke="#19c6be" stroke-width="1.5" stroke-dasharray="3 3" opacity=".6"/>
-          <circle cx="12" cy="3" r="1.5" fill="#19c6be" opacity=".5"/>
-          <circle cx="21" cy="12" r="1.5" fill="#19c6be" opacity=".5"/>
-          <circle cx="3" cy="12" r="1.5" fill="#19c6be" opacity=".5"/>
-        </svg>
-      </div>
-      <div>
-        <div class="logo__name">KI <em>Connect</em></div>
-        <div class="logo__sub">Kulan Institute — Live Learning</div>
-      </div>
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo__icon">
+      <svg viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="5" fill="#19c6be"/>
+        <circle cx="13" cy="13" r="9" stroke="#19c6be" stroke-width="1.4" stroke-dasharray="3 3" opacity=".6"/>
+        <circle cx="13" cy="3"  r="1.8" fill="#19c6be" opacity=".5"/>
+        <circle cx="23" cy="13" r="1.8" fill="#19c6be" opacity=".5"/>
+        <circle cx="3"  cy="13" r="1.8" fill="#19c6be" opacity=".5"/>
+      </svg>
     </div>
-
-    <!-- Sign In view -->
-    <div class="card view view--active" id="view-login">
-      <div class="card__head">
-        <div class="card__title">Sign in</div>
-        <div class="card__sub">Enter your credentials to access your dashboard</div>
-      </div>
-
-      <div class="banner" id="loginBanner"></div>
-
-      <div class="field">
-        <div class="field__label"><span>Email</span></div>
-        <input class="field__input" type="email" id="loginEmail"
-               placeholder="you@example.com" autocomplete="email" spellcheck="false"/>
-        <span class="field__err" id="emailErr"></span>
-      </div>
-
-      <div class="field">
-        <div class="field__label">
-          <span>Password</span>
-          <button class="field__hint" type="button" onclick="showView('reset')">Forgot password?</button>
-        </div>
-        <div class="pwd-wrap">
-          <input class="field__input" type="password" id="loginPassword"
-                 placeholder="Enter your password" autocomplete="current-password"/>
-          <button class="pwd-toggle" type="button" onclick="togglePwd('loginPassword', this)" aria-label="Show/hide password">
-            <svg id="eyeIcon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M1 10s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/>
-              <circle cx="10" cy="10" r="2.5"/>
-            </svg>
-          </button>
-        </div>
-        <span class="field__err" id="passErr"></span>
-      </div>
-
-      <button class="btn btn--primary" id="loginBtn" onclick="handleLogin()">
-        <span class="btn__label">Sign in</span>
-      </button>
-    </div>
-
-    <!-- Forgot Password view -->
-    <div class="card view" id="view-reset">
-      <button class="back-link" onclick="showView('login')">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3L5 8l5 5"/></svg>
-        Back to sign in
-      </button>
-
-      <div class="card__head">
-        <div class="card__title">Reset your password</div>
-        <div class="card__sub">We'll send a reset link to your email address</div>
-      </div>
-
-      <div class="banner" id="resetBanner"></div>
-
-      <div class="field">
-        <div class="field__label"><span>Email</span></div>
-        <input class="field__input" type="email" id="resetEmail"
-               placeholder="you@example.com" autocomplete="email"/>
-        <span class="field__err" id="resetEmailErr"></span>
-      </div>
-
-      <button class="btn btn--primary" id="resetBtn" onclick="handleReset()">
-        <span class="btn__label">Send reset link</span>
-      </button>
-    </div>
-
-    <!-- Set New Password view (arrives via reset email link) -->
-    <div class="card view" id="view-newpass">
-      <div class="card__head">
-        <div class="card__title">Choose a new password</div>
-        <div class="card__sub">Pick something you haven't used before</div>
-      </div>
-
-      <div class="banner" id="newpassBanner"></div>
-
-      <div class="field">
-        <div class="field__label"><span>New password</span></div>
-        <div class="pwd-wrap">
-          <input class="field__input" type="password" id="newPass" placeholder="8+ characters"/>
-          <button class="pwd-toggle" type="button" onclick="togglePwd('newPass', this)" aria-label="Show/hide">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
-          </button>
-        </div>
-        <span class="field__err" id="newPassErr"></span>
-      </div>
-
-      <div class="field">
-        <div class="field__label"><span>Confirm password</span></div>
-        <input class="field__input" type="password" id="confirmPass" placeholder="Repeat password"/>
-        <span class="field__err" id="confirmPassErr"></span>
-      </div>
-
-      <button class="btn btn--primary" id="newpassBtn" onclick="handleNewPass()">
-        <span class="btn__label">Update password</span>
-      </button>
-    </div>
-
-    <div class="page-footer">
-      Access is by invitation only.<br>
-      No account? Contact your administrator.<br>
-      <br>
-      <a href="https://kulaninstitute.org" target="_blank" rel="noopener">kulaninstitute.org</a>
-    </div>
-
+    <div class="logo__name">KI <em>Connect</em></div>
+    <div class="logo__tagline">Kulan Institute — Live Classroom</div>
   </div>
+
+  <!-- ── Sign In ── -->
+  <div class="card view active" id="view-login">
+    <div class="card__title">Sign in</div>
+    <div class="card__sub">Enter your credentials to access your account</div>
+
+    <div class="banner" id="loginBanner"></div>
+
+    <div class="field">
+      <div class="field__top">
+        <label for="loginEmail">Email</label>
+      </div>
+      <input class="field__input" type="email" id="loginEmail"
+             placeholder="you@example.com" autocomplete="email" spellcheck="false"/>
+      <div class="field__err" id="loginEmailErr"></div>
+    </div>
+
+    <div class="field">
+      <div class="field__top">
+        <label for="loginPassword">Password</label>
+        <button class="link-btn" type="button" onclick="switchView('reset')">Forgot password?</button>
+      </div>
+      <div class="pwd-wrap">
+        <input class="field__input" type="password" id="loginPassword"
+               placeholder="Enter your password" autocomplete="current-password"/>
+        <button class="pwd-eye" type="button" onclick="togglePwd('loginPassword')" tabindex="-1" aria-label="Toggle password visibility">
+          <svg id="eyeOn" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/>
+            <circle cx="10" cy="10" r="2.5"/>
+          </svg>
+          <svg id="eyeOff" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" style="display:none">
+            <path d="M2 2l16 16M7.5 7.7A4 4 0 0013 13M4.2 4.3C2.5 5.7 1 8 1 10s3.5 6 9 6c2 0 3.7-.5 5.1-1.4M8 4.1A9 9 0 0119 10c-.4.9-1 1.8-1.7 2.6"/>
+          </svg>
+        </button>
+      </div>
+      <div class="field__err" id="loginPassErr"></div>
+    </div>
+
+    <button class="btn btn-primary" id="loginBtn" type="button" onclick="handleLogin()">
+      <span class="btn-label">Sign in</span>
+      <span class="btn-spinner"></span>
+    </button>
+  </div>
+
+  <!-- ── Forgot Password ── -->
+  <div class="card view" id="view-reset">
+    <button class="back-btn" type="button" onclick="switchView('login')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 3L5 8l5 5"/></svg>
+      Back to sign in
+    </button>
+
+    <div class="card__title">Reset password</div>
+    <div class="card__sub">Enter your email and we'll send a reset link</div>
+
+    <div class="banner" id="resetBanner"></div>
+
+    <div class="field">
+      <div class="field__top"><label for="resetEmail">Email</label></div>
+      <input class="field__input" type="email" id="resetEmail"
+             placeholder="you@example.com" autocomplete="email"/>
+      <div class="field__err" id="resetEmailErr"></div>
+    </div>
+
+    <button class="btn btn-primary" id="resetBtn" type="button" onclick="handleReset()">
+      <span class="btn-label">Send reset link</span>
+      <span class="btn-spinner"></span>
+    </button>
+  </div>
+
+  <!-- ── Set New Password ── -->
+  <div class="card view" id="view-newpass">
+    <div class="card__title">Set new password</div>
+    <div class="card__sub">Choose a strong password for your account</div>
+
+    <div class="banner" id="newpassBanner"></div>
+
+    <div class="field">
+      <div class="field__top"><label for="newPass">New password</label></div>
+      <div class="pwd-wrap">
+        <input class="field__input" type="password" id="newPass" placeholder="Minimum 8 characters"/>
+        <button class="pwd-eye" type="button" onclick="togglePwd('newPass')" tabindex="-1" aria-label="Toggle">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
+        </button>
+      </div>
+      <div class="field__err" id="newPassErr"></div>
+    </div>
+
+    <div class="field">
+      <div class="field__top"><label for="confirmPass">Confirm password</label></div>
+      <input class="field__input" type="password" id="confirmPass" placeholder="Repeat password"/>
+      <div class="field__err" id="confirmPassErr"></div>
+    </div>
+
+    <button class="btn btn-primary" id="newpassBtn" type="button" onclick="handleNewPass()">
+      <span class="btn-label">Update password</span>
+      <span class="btn-spinner"></span>
+    </button>
+  </div>
+
+  <div class="page-footer">
+    Access is by invitation only — contact your admin for an account.<br>
+    <a href="https://kulaninstitute.org" target="_blank" rel="noopener">kulaninstitute.org</a>
+  </div>
+
 </div>
 
-<div class="toast" id="toast"><span class="toast__msg"></span></div>
+<div class="toast" id="toast"></div>
 
 <script>
-/* ── View routing ─────────────────────────────────────── */
-function showView(id) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('view--active'));
-  document.getElementById('view-' + id).classList.add('view--active');
-  clearBanners();
-}
+  /* ── Supabase — self-contained, no external config.js dependency ── */
+  const SUPABASE_URL = 'https://dmnrtvkauymnzytqkmvc.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtbnJ0dmthdXltbnp5dHFrbXZjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4MDg0OTksImV4cCI6MjA5MDM4NDQ5OX0.mEFYJYjvsr2pEgCm5pSMZ2xCYVO8XRS8oiRCkNu-fUM';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-function clearBanners() {
-  document.querySelectorAll('.banner').forEach(b => { b.className = 'banner'; b.textContent = ''; });
-  document.querySelectorAll('.field__err').forEach(e => e.textContent = '');
-  document.querySelectorAll('.field__input--err').forEach(i => i.classList.remove('field__input--err'));
-}
-
-function showBanner(id, msg, type = 'err') {
-  const el = document.getElementById(id);
-  el.className = 'banner banner--' + type;
-  el.textContent = msg;
-}
-
-function togglePwd(inputId, btn) {
-  const input = document.getElementById(inputId);
-  const showing = input.type === 'text';
-  input.type = showing ? 'password' : 'text';
-  btn.querySelector('svg').style.opacity = showing ? '1' : '.45';
-}
-
-/* ── Init ─────────────────────────────────────────────── */
-window.addEventListener('DOMContentLoaded', async () => {
-  // Detect password-recovery hash from Supabase reset email
-  const hash = window.location.hash;
-  if (hash.includes('type=recovery') || hash.includes('access_token')) {
-    showView('newpass');
-    return;
+  /* ── Role routing ── */
+  function goHome(role) {
+    const map = { admin: 'admin.html', teacher: 'teacher.html', student: 'dashboard.html' };
+    window.location.replace(map[role] || 'dashboard.html');
   }
 
-  // Auto-redirect if already signed in
-  try {
-    const user = await getUser();
-    if (user) {
-      const profile = await getProfile(user.id);
-      if (profile?.role) goHome(profile.role);
+  /* ── Init — check for existing session or reset link ── */
+  window.addEventListener('DOMContentLoaded', async () => {
+    // Supabase puts the recovery token in the URL hash
+    if (window.location.hash.includes('type=recovery') || window.location.hash.includes('access_token')) {
+      // Let Supabase parse the hash and restore the session
+      const { data } = await db.auth.getSession();
+      if (data?.session) {
+        switchView('newpass');
+        return;
+      }
     }
-  } catch (_) {}
-});
 
-/* ── Sign In ─────────────────────────────────────────── */
-async function handleLogin() {
-  clearBanners();
-  const email    = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-
-  let valid = true;
-
-  if (!email) {
-    document.getElementById('emailErr').textContent = 'Email is required.';
-    document.getElementById('loginEmail').classList.add('field__input--err');
-    valid = false;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    document.getElementById('emailErr').textContent = 'Enter a valid email address.';
-    document.getElementById('loginEmail').classList.add('field__input--err');
-    valid = false;
-  }
-
-  if (!password) {
-    document.getElementById('passErr').textContent = 'Password is required.';
-    document.getElementById('loginPassword').classList.add('field__input--err');
-    valid = false;
-  }
-
-  if (!valid) return;
-
-  btnLoad('loginBtn', true);
-
-  const { data, error } = await db.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    btnLoad('loginBtn', false);
-    const msg = error.message.toLowerCase().includes('invalid')
-      ? 'Wrong email or password. Check your details and try again.'
-      : error.message;
-    showBanner('loginBanner', msg);
-    return;
-  }
-
-  // Fetch profile to get role
-  const profile = await getProfile(data.user.id);
-
-  if (!profile) {
-    await db.auth.signOut();
-    btnLoad('loginBtn', false);
-    showBanner('loginBanner', 'Your account isn\'t fully set up yet. Contact your administrator.');
-    return;
-  }
-
-  // Redirect — don't re-enable button, page is changing
-  goHome(profile.role);
-}
-
-/* ── Forgot Password ─────────────────────────────────── */
-async function handleReset() {
-  clearBanners();
-  const email = document.getElementById('resetEmail').value.trim();
-
-  if (!email) {
-    document.getElementById('resetEmailErr').textContent = 'Enter your email address.';
-    document.getElementById('resetEmail').classList.add('field__input--err');
-    return;
-  }
-
-  btnLoad('resetBtn', true);
-
-  const { error } = await db.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://connect.kulaninstitute.org/index.html'
+    // Already signed in — auto-redirect
+    try {
+      const { data: { user } } = await db.auth.getUser();
+      if (user) {
+        const profile = await fetchProfile(user.id);
+        if (profile) goHome(profile.role);
+      }
+    } catch (_) {
+      // Not signed in — stay on login page
+    }
   });
 
-  btnLoad('resetBtn', false);
-
-  if (error) {
-    showBanner('resetBanner', error.message);
-    return;
-  }
-
-  // Always show success — don't confirm whether the email exists (security)
-  showBanner('resetBanner', 'If that email is registered, you\'ll get a reset link shortly. Check your spam folder too.', 'ok');
-}
-
-/* ── Set New Password ─────────────────────────────────── */
-async function handleNewPass() {
-  clearBanners();
-  const p1 = document.getElementById('newPass').value;
-  const p2 = document.getElementById('confirmPass').value;
-  let valid = true;
-
-  if (p1.length < 8) {
-    document.getElementById('newPassErr').textContent = 'Password must be at least 8 characters.';
-    document.getElementById('newPass').classList.add('field__input--err');
-    valid = false;
-  }
-
-  if (p2 && p1 !== p2) {
-    document.getElementById('confirmPassErr').textContent = 'Passwords don\'t match.';
-    document.getElementById('confirmPass').classList.add('field__input--err');
-    valid = false;
-  }
-
-  if (!valid) return;
-
-  btnLoad('newpassBtn', true);
-
-  const { error } = await db.auth.updateUser({ password: p1 });
-
-  if (error) {
-    btnLoad('newpassBtn', false);
-    showBanner('newpassBanner', error.message);
-    return;
-  }
-
-  showBanner('newpassBanner', 'Password updated. Taking you to your dashboard…', 'ok');
-
-  setTimeout(async () => {
+  /* ── Profile fetch with fallback ── */
+  async function fetchProfile(userId) {
     try {
-      const user = await getUser();
-      const profile = await getProfile(user?.id);
-      goHome(profile?.role);
-    } catch (_) {
-      window.location.replace('index.html');
-    }
-  }, 1800);
-}
+      const { data, error } = await db
+        .from('profiles')
+        .select('id, role, full_name, status')
+        .eq('id', userId)
+        .single();
 
-/* ── Keyboard support ─────────────────────────────────── */
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  const active = document.querySelector('.view--active')?.id;
-  if (active === 'view-login')   handleLogin();
-  if (active === 'view-reset')   handleReset();
-  if (active === 'view-newpass') handleNewPass();
-});
+      if (error) {
+        console.warn('Profile fetch error:', error.message);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error('fetchProfile exception:', err);
+      return null;
+    }
+  }
+
+  /* ── View switching ── */
+  function switchView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + id).classList.add('active');
+    clearAll();
+  }
+
+  function clearAll() {
+    // Clear banners
+    document.querySelectorAll('.banner').forEach(b => {
+      b.className = 'banner';
+      b.textContent = '';
+    });
+    // Clear field errors
+    document.querySelectorAll('.field__err').forEach(e => {
+      e.textContent = '';
+      e.classList.remove('visible');
+    });
+    // Clear field error states
+    document.querySelectorAll('.field__input.err').forEach(i => i.classList.remove('err'));
+  }
+
+  function showBanner(id, msg, type = 'err') {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = 'banner ' + type;
+  }
+
+  function showFieldErr(errId, inputId, msg) {
+    const errEl = document.getElementById(errId);
+    errEl.textContent = msg;
+    errEl.classList.add('visible');
+    if (inputId) document.getElementById(inputId).classList.add('err');
+  }
+
+  /* ── Button loading state ── */
+  function setLoading(btnId, loading) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.classList.toggle('loading', loading);
+  }
+
+  /* ── Password show/hide ── */
+  function togglePwd(inputId) {
+    const input = document.getElementById(inputId);
+    input.type = input.type === 'password' ? 'text' : 'password';
+
+    // Swap eye icons if they exist (login field has both)
+    const eyeOn  = document.getElementById('eyeOn');
+    const eyeOff = document.getElementById('eyeOff');
+    if (eyeOn && eyeOff) {
+      eyeOn.style.display  = input.type === 'text' ? 'none' : 'block';
+      eyeOff.style.display = input.type === 'text' ? 'block' : 'none';
+    }
+  }
+
+  /* ── Toast ── */
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  /* ── Sign In ── */
+  async function handleLogin() {
+    clearAll();
+
+    const email    = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    // Validate
+    let valid = true;
+
+    if (!email) {
+      showFieldErr('loginEmailErr', 'loginEmail', 'Email is required.');
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showFieldErr('loginEmailErr', 'loginEmail', 'Enter a valid email address.');
+      valid = false;
+    }
+
+    if (!password) {
+      showFieldErr('loginPassErr', 'loginPassword', 'Password is required.');
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    setLoading('loginBtn', true);
+
+    try {
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        setLoading('loginBtn', false);
+        const friendly = error.message.toLowerCase().includes('invalid')
+          ? 'Wrong email or password. Please try again.'
+          : error.message;
+        showBanner('loginBanner', friendly);
+        return;
+      }
+
+      // Get profile
+      const profile = await fetchProfile(data.user.id);
+
+      if (!profile) {
+        // Profile row missing — this happens if the DB trigger didn't fire.
+        // Try to create it now so the user isn't stuck.
+        const meta = data.user.user_metadata || {};
+        const role = meta.role || 'student';
+
+        const { error: upsertErr } = await db.from('profiles').upsert({
+          id:        data.user.id,
+          full_name: meta.full_name || email.split('@')[0],
+          email:     email,
+          role:      role,
+          status:    'active'
+        });
+
+        if (upsertErr) {
+          await db.auth.signOut();
+          setLoading('loginBtn', false);
+          showBanner('loginBanner',
+            'Your account profile is missing. Please ask your administrator to check the database setup.'
+          );
+          return;
+        }
+
+        goHome(role);
+        return;
+      }
+
+      if (profile.status === 'suspended') {
+        await db.auth.signOut();
+        setLoading('loginBtn', false);
+        showBanner('loginBanner', 'Your account has been suspended. Contact your administrator.');
+        return;
+      }
+
+      // All good — redirect based on role
+      goHome(profile.role);
+
+    } catch (err) {
+      setLoading('loginBtn', false);
+      console.error('Login error:', err);
+      showBanner('loginBanner', 'Something went wrong. Please try again.');
+    }
+  }
+
+  /* ── Forgot Password ── */
+  async function handleReset() {
+    clearAll();
+    const email = document.getElementById('resetEmail').value.trim();
+
+    if (!email) {
+      showFieldErr('resetEmailErr', 'resetEmail', 'Enter your email address.');
+      return;
+    }
+
+    setLoading('resetBtn', true);
+
+    try {
+      const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://connect.kulaninstitute.org/index.html'
+      });
+
+      setLoading('resetBtn', false);
+
+      if (error) {
+        showBanner('resetBanner', error.message);
+        return;
+      }
+
+      // Don't reveal whether the email exists
+      showBanner('resetBanner',
+        'If that email is registered, a reset link is on its way. Check your spam folder too.',
+        'ok'
+      );
+    } catch (err) {
+      setLoading('resetBtn', false);
+      showBanner('resetBanner', 'Something went wrong. Please try again.');
+    }
+  }
+
+  /* ── Set New Password ── */
+  async function handleNewPass() {
+    clearAll();
+    const p1 = document.getElementById('newPass').value;
+    const p2 = document.getElementById('confirmPass').value;
+    let valid = true;
+
+    if (p1.length < 8) {
+      showFieldErr('newPassErr', 'newPass', 'Password must be at least 8 characters.');
+      valid = false;
+    }
+
+    if (!p2) {
+      showFieldErr('confirmPassErr', 'confirmPass', 'Please confirm your password.');
+      valid = false;
+    } else if (p1 !== p2) {
+      showFieldErr('confirmPassErr', 'confirmPass', "Passwords don't match.");
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    setLoading('newpassBtn', true);
+
+    try {
+      const { error } = await db.auth.updateUser({ password: p1 });
+
+      if (error) {
+        setLoading('newpassBtn', false);
+        showBanner('newpassBanner', error.message);
+        return;
+      }
+
+      showBanner('newpassBanner', 'Password updated. Taking you to your dashboard…', 'ok');
+
+      setTimeout(async () => {
+        const { data: { user } } = await db.auth.getUser();
+        const profile = await fetchProfile(user?.id);
+        goHome(profile?.role || 'student');
+      }, 1600);
+
+    } catch (err) {
+      setLoading('newpassBtn', false);
+      showBanner('newpassBanner', 'Something went wrong. Please try again.');
+    }
+  }
+
+  /* ── Keyboard support ── */
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    const active = document.querySelector('.view.active')?.id;
+    if (active === 'view-login')   handleLogin();
+    if (active === 'view-reset')   handleReset();
+    if (active === 'view-newpass') handleNewPass();
+  });
 </script>
 </body>
 </html>
