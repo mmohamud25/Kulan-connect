@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KI Connect — Live Session</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://YOUR_PROJECT_URL.supabase.co";
+    const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    async function getUser() { try { const { data: { user } } = await supabaseClient.auth.getUser(); return user; } catch(e) { return null; } }
+    async function signOut() { try { await supabaseClient.auth.signOut(); } catch(e) {} window.location.href = 'index.html'; }
+    async function getUserProfile(uid) { try { const { data } = await supabaseClient.from('profiles').select('*').eq('id', uid).single(); return data; } catch(e) { return null; } }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080d14;
+      --surface: #0f1923;
+      --surface2: #121e2d;
+      --border: #1a2535;
+      --border2: #1f2e42;
+      --cyan: #00d4c8;
+      --cyan-dim: rgba(0,212,200,0.1);
+      --cyan-border: rgba(0,212,200,0.25);
+      --gold: #f0b429;
+      --gold-dim: rgba(240,180,41,0.1);
+      --green: #22c55e;
+      --green-dim: rgba(34,197,94,0.1);
+      --red: #ef4444;
+      --red-dim: rgba(239,68,68,0.1);
+      --purple: #a855f7;
+      --purple-dim: rgba(168,85,247,0.1);
+      --text: #e8edf5;
+      --text2: #94a3b8;
+      --muted: #4a5a70;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; overflow: hidden; }
+
+    /* ── Layout ── */
+    .session-layout {
+      display: grid;
+      grid-template-rows: 56px 1fr 72px;
+      grid-template-columns: 1fr 320px;
+      height: 100vh;
+      grid-template-areas:
+        "topbar topbar"
+        "main sidebar"
+        "controls controls";
+    }
+
+    /* ── Topbar ── */
+    .topbar {
+      grid-area: topbar;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 14px;
+      z-index: 50;
+    }
+
+    .session-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .session-brand span { color: var(--cyan); }
+
+    .session-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-meta-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+
+    .live-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--red-dim);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+      animation: blink 1.2s ease infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    .timer-display {
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text2);
+      letter-spacing: 1px;
+    }
+
+    .participant-count {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+
+    .participant-count svg { width: 14px; height: 14px; }
+
+    .topbar-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border2);
+      background: var(--surface2);
+      color: var(--text2);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .topbar-btn:hover { border-color: var(--cyan-border); color: var(--cyan); }
+    .topbar-btn svg { width: 13px; height: 13px; }
+
+    .topbar-btn.danger { border-color: rgba(239,68,68,0.3); color: var(--red); background: var(--red-dim); }
+    .topbar-btn.danger:hover { background: rgba(239,68,68,0.18); }
+
+    /* ── Main area ── */
+    .main-area {
+      grid-area: main;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* Stage */
+    .stage {
+      flex: 1;
+      position: relative;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .stage-placeholder {
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .stage-placeholder svg { width: 56px; height: 56px; margin: 0 auto 14px; display: block; opacity: 0.25; }
+    .stage-placeholder h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: var(--text2); margin-bottom: 6px; }
+    .stage-placeholder p { font-size: 13px; }
+
+    #screenVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    #webcamVideo {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      width: 180px;
+      height: 112px;
+      border-radius: 10px;
+      border: 2px solid var(--cyan);
+      object-fit: cover;
+      display: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .rec-timer-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: none;
+      align-items: center;
+      gap: 7px;
+      background: rgba(239,68,68,0.9);
+      backdrop-filter: blur(8px);
+      color: white;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+    .rec-timer-overlay.active { display: flex; }
+    .rec-dot { width: 7px; height: 7px; border-radius: 50%; background: white; animation: blink 1s infinite; }
+
+    /* Reactions overlay */
+    .reactions-overlay {
+      position: absolute;
+      bottom: 80px;
+      left: 20px;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .reaction-bubble {
+      font-size: 24px;
+      animation: floatUp 2.5s ease forwards;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.3); }
+    }
+
+    /* Raised hands overlay */
+    .hands-overlay {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .hand-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(240,180,41,0.9);
+      backdrop-filter: blur(8px);
+      color: #080d14;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 20px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+    /* Q&A banner */
+    .qa-banner {
+      background: var(--purple-dim);
+      border-top: 1px solid rgba(168,85,247,0.25);
+      padding: 10px 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .qa-banner.active { display: flex; }
+    .qa-banner-text { flex: 1; font-size: 13px; color: var(--purple); }
+    .qa-banner svg { width: 14px; height: 14px; color: var(--purple); flex-shrink: 0; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sidebar-tab {
+      flex: 1;
+      padding: 12px 6px;
+      border: none;
+      background: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      position: relative;
+    }
+
+    .sidebar-tab svg { width: 15px; height: 15px; }
+    .sidebar-tab:hover { color: var(--text2); }
+    .sidebar-tab.active { color: var(--cyan); }
+    .sidebar-tab.active::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--cyan); }
+
+    .tab-badge {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      width: 16px;
+      height: 16px;
+      background: var(--red);
+      color: white;
+      font-size: 9px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+
+    .sidebar-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .sidebar-panel.active { display: flex; }
+
+    /* Chat panel */
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-msg {
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-msg.teacher .msg-avatar { background: var(--gold-dim); border-color: rgba(240,180,41,0.3); color: var(--gold); }
+
+    .msg-avatar {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--cyan-dim);
+      border: 1px solid var(--cyan-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px;
+      font-weight: 700;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .msg-body { flex: 1; }
+    .msg-header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 3px; }
+    .msg-name { font-size: 11px; font-weight: 600; color: var(--cyan); }
+    .msg-name.teacher-name { color: var(--gold); }
+    .msg-time { font-size: 10px; color: var(--muted); }
+    .msg-text { font-size: 13px; color: var(--text2); line-height: 1.5; word-break: break-word; }
+
+    .msg-pinned {
+      background: var(--purple-dim);
+      border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .msg-pinned .msg-text { color: var(--purple); }
+
+    .system-msg {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 4px 0;
+    }
+
+    .chat-input-wrap {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .chat-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+      height: 40px;
+    }
+
+    .chat-input:focus { border-color: var(--cyan-border); }
+    .chat-input::placeholder { color: var(--muted); }
+
+    .chat-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .emoji-row {
+      display: flex;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .emoji-btn {
+      background: none;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 4px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+
+    .emoji-btn:hover { background: var(--surface2); }
+
+    .send-btn {
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      border: none;
+      background: var(--cyan);
+      color: #080d14;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:hover { opacity: 0.85; }
+    .send-btn svg { width: 14px; height: 14px; }
+
+    /* Participants panel */
+    .participants-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .participant-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      transition: border-color 0.15s;
+    }
+
+    .participant-item.hand-raised { border-color: rgba(240,180,41,0.4); background: var(--gold-dim); }
+
+    .p-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--cyan-dim);
+      border: 1px solid var(--cyan-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--cyan);
+      flex-shrink: 0;
+    }
+
+    .p-avatar.teacher-av { background: var(--gold-dim); border-color: rgba(240,180,41,0.3); color: var(--gold); }
+
+    .p-name { flex: 1; font-size: 13px; color: var(--text); font-weight: 500; }
+    .p-role { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 10px; }
+    .p-role.teacher { background: var(--gold-dim); color: var(--gold); }
+    .p-role.student { background: var(--cyan-dim); color: var(--cyan); }
+
+    .p-hand { font-size: 14px; }
+
+    /* Q&A panel */
+    .qa-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .qa-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      transition: border-color 0.15s;
+    }
+
+    .qa-item.answered { border-color: rgba(34,197,94,0.3); background: var(--green-dim); }
+
+    .qa-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .qa-asker { font-size: 11px; font-weight: 600; color: var(--cyan); }
+    .qa-time { font-size: 10px; color: var(--muted); margin-left: auto; }
+    .qa-question { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 8px; }
+
+    .qa-actions { display: flex; gap: 6px; }
+
+    .qa-btn {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 7px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .qa-btn.answer { background: var(--cyan-dim); color: var(--cyan); border: 1px solid var(--cyan-border); }
+    .qa-btn.answer:hover { background: rgba(0,212,200,0.18); }
+    .qa-btn.done { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .qa-upvote { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); margin-left: auto; cursor: pointer; }
+    .qa-upvote:hover { color: var(--text); }
+
+    .qa-input-wrap {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .qa-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 8px;
+    }
+
+    .qa-input:focus { border-color: var(--cyan-border); }
+    .qa-input::placeholder { color: var(--muted); }
+
+    .qa-submit {
+      width: 100%;
+      padding: 9px;
+      border-radius: 9px;
+      border: none;
+      background: var(--purple-dim);
+      color: var(--purple);
+      border: 1px solid rgba(168,85,247,0.3);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .qa-submit:hover { background: rgba(168,85,247,0.18); }
+
+    /* Poll panel */
+    .poll-wrap {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+    }
+
+    .poll-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .poll-question { font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 14px; }
+
+    .poll-option {
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .poll-option-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+
+    .poll-bar-wrap { height: 8px; background: var(--border); border-radius: 20px; overflow: hidden; }
+
+    .poll-bar {
+      height: 100%;
+      background: var(--cyan);
+      border-radius: 20px;
+      transition: width 0.6s ease;
+    }
+
+    .poll-bar.gold { background: var(--gold); }
+    .poll-bar.purple { background: var(--purple); }
+    .poll-bar.green { background: var(--green); }
+
+    .poll-option.selected .poll-bar-wrap { box-shadow: 0 0 0 1px var(--cyan-border); }
+
+    .no-poll {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* ── Controls bar ── */
+    .controls {
+      grid-area: controls;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 20px;
+    }
+
+    .ctrl-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      min-width: 60px;
+    }
+
+    .ctrl-btn svg { width: 18px; height: 18px; }
+    .ctrl-btn:hover { border-color: var(--cyan-border); color: var(--cyan); }
+    .ctrl-btn.active { background: var(--cyan-dim); border-color: var(--cyan-border); color: var(--cyan); }
+    .ctrl-btn.danger { border-color: rgba(239,68,68,0.3); color: var(--red); background: var(--red-dim); }
+    .ctrl-btn.danger:hover { background: rgba(239,68,68,0.2); }
+    .ctrl-btn.recording { background: var(--red-dim); border-color: rgba(239,68,68,0.4); color: var(--red); }
+
+    .ctrl-sep { width: 1px; height: 32px; background: var(--border); margin: 0 4px; }
+
+    /* Teacher recording controls */
+    .teacher-controls {
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .teacher-controls.visible { display: flex; }
+
+    /* End session modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 400px;
+      padding: 32px;
+      text-align: center;
+      animation: popIn 0.25s ease;
+    }
+
+    @keyframes popIn { from { opacity:0; transform:scale(0.94); } to { opacity:1; transform:scale(1); } }
+
+    .modal-icon { font-size: 40px; margin-bottom: 16px; }
+    .modal-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .modal-body { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
+
+    .modal-btns { display: flex; gap: 10px; }
+
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .modal-btn.cancel { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+    .modal-btn.confirm { background: var(--red); color: white; }
+    .modal-btn.confirm:hover { opacity: 0.88; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 200;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="session-layout">
+
+  <!-- ── Topbar ── -->
+  <header class="topbar">
+    <div class="session-brand">KI <span>Connect</span></div>
+
+    <div class="session-title" id="sessionTitle">Loading session...</div>
+
+    <div class="session-meta-top">
+      <div class="live-pill"><div class="live-dot"></div> LIVE</div>
+      <div class="timer-display" id="sessionTimer">00:00</div>
+      <div class="participant-count">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="4" r="2.5"/><path d="M1 12c0-2.5 1.8-4 4-4s4 1.5 4 4"/><circle cx="11" cy="5" r="2"/><path d="M13 12c0-2-1.3-3-2-3"/></svg>
+        <span id="participantCount">0</span>
+      </div>
+      <button class="topbar-btn" onclick="toggleFullscreen()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/></svg>
+        Fullscreen
+      </button>
+      <button class="topbar-btn danger" id="endBtn" onclick="confirmEnd()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2l10 10M12 2L2 12"/></svg>
+        <span id="endBtnLabel">Leave</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Main Stage ── -->
+  <main class="main-area">
+    <div class="stage" id="stage">
+      <video id="screenVideo" autoplay playsinline></video>
+      <video id="webcamVideo" autoplay playsinline muted></video>
+
+      <div class="recorder-timer-overlay" id="recTimerOverlay">
+        <div class="rec-dot"></div>
+        <span id="recTimerText">REC 00:00</span>
+      </div>
+
+      <div class="reactions-overlay" id="reactionsOverlay"></div>
+      <div class="hands-overlay" id="handsOverlay"></div>
+
+      <div class="stage-placeholder" id="stagePlaceholder">
+        <svg viewBox="0 0 56 56" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="4" y="10" width="40" height="28" rx="3"/>
+          <path d="M20 38l4 8M32 38l-4 8M16 46h24"/>
+          <circle cx="48" cy="20" r="5"/>
+          <circle cx="48" cy="34" r="5"/>
+        </svg>
+        <h3 id="stageTitle">Session is Live</h3>
+        <p id="stageSubtitle">Waiting for teacher to share screen...</p>
+      </div>
+    </div>
+
+    <!-- Q&A active banner -->
+    <div class="qa-banner" id="qaBanner">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="6"/><path d="M7 4v3l2 2"/></svg>
+      <div class="qa-banner-text" id="qaBannerText">Teacher is answering: <strong>How does asymmetric encryption work?</strong></div>
+      <button onclick="document.getElementById('qaBanner').classList.remove('active')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px">×</button>
+    </div>
+  </main>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-tabs">
+      <button class="sidebar-tab active" onclick="switchTab('chat')" id="tab-chat">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h11a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 2V4a1 1 0 011-1z"/></svg>
+        Chat
+        <div class="tab-badge" id="chatBadge">0</div>
+      </button>
+      <button class="sidebar-tab" onclick="switchTab('participants')" id="tab-participants">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="3"/><path d="M1 13c0-3 1.8-4.5 4-4.5s4 1.5 4 4.5"/><circle cx="11" cy="6" r="2"/><path d="M13 13c0-2-1-3-2-3"/></svg>
+        People
+      </button>
+      <button class="sidebar-tab" onclick="switchTab('qa')" id="tab-qa">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7.5" cy="7.5" r="6.5"/><path d="M7.5 10v.5"/><path d="M7.5 5a2 2 0 011.5 3.3c-.4.4-1.5.7-1.5 1.7"/></svg>
+        Q&A
+        <div class="tab-badge" id="qaBadge">0</div>
+      </button>
+      <button class="sidebar-tab" onclick="switchTab('poll')" id="tab-poll">
+        <svg viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 11l4-5 3 3 4-6 3 3"/></svg>
+        Poll
+      </button>
+    </div>
+
+    <!-- Chat -->
+    <div class="sidebar-panel active" id="panel-chat">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" placeholder="Message everyone..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"
+          oninput="this.style.height='40px';this.style.height=Math.min(this.scrollHeight,90)+'px'"></textarea>
+        <div class="chat-actions">
+          <div class="emoji-row">
+            <button class="emoji-btn" onclick="insertEmoji('👍')">👍</button>
+            <button class="emoji-btn" onclick="insertEmoji('🔥')">🔥</button>
+            <button class="emoji-btn" onclick="insertEmoji('❓')">❓</button>
+            <button class="emoji-btn" onclick="insertEmoji('✅')">✅</button>
+            <button class="emoji-btn" onclick="insertEmoji('💡')">💡</button>
+          </div>
+          <button class="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 14 14" fill="currentColor"><path d="M1 1l12 6-12 6V8l8-1-8-1V1z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Participants -->
+    <div class="sidebar-panel" id="panel-participants">
+      <div class="participants-list" id="participantsList"></div>
+    </div>
+
+    <!-- Q&A -->
+    <div class="sidebar-panel" id="panel-qa">
+      <div class="qa-list" id="qaList"></div>
+      <div class="qa-input-wrap">
+        <input class="qa-input" id="qaInput" placeholder="Ask a question..."/>
+        <button class="qa-submit" onclick="submitQuestion()">Submit Question</button>
+      </div>
+    </div>
+
+    <!-- Poll -->
+    <div class="sidebar-panel" id="panel-poll">
+      <div class="poll-wrap" id="pollWrap">
+        <div class="no-poll" id="noPoll">
+          <span style="font-size:32px;display:block;margin-bottom:8px">📊</span>
+          No active poll right now.
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Bottom Controls ── -->
+  <div class="controls">
+
+    <!-- Student controls -->
+    <div id="studentControls" style="display:flex;gap:10px;align-items:center">
+      <button class="ctrl-btn" id="micBtn" onclick="toggleMic()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="1" width="6" height="10" rx="3"/><path d="M3 9a6 6 0 0012 0M9 15v2"/></svg>
+        Mute
+      </button>
+      <button class="ctrl-btn" id="handBtn" onclick="toggleHand()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 1v9M6 3v7M12 3v7M3 8a3 3 0 006 6 3 3 0 006-6"/></svg>
+        Raise Hand
+      </button>
+      <div class="ctrl-sep"></div>
+      <button class="ctrl-btn" onclick="sendReaction('👍')"><span style="font-size:18px">👍</span>React</button>
+      <button class="ctrl-btn" onclick="sendReaction('🔥')"><span style="font-size:18px">🔥</span>React</button>
+      <button class="ctrl-btn" onclick="sendReaction('❓')"><span style="font-size:18px">❓</span>React</button>
+      <button class="ctrl-btn" onclick="sendReaction('🎉')"><span style="font-size:18px">🎉</span>React</button>
+    </div>
+
+    <!-- Teacher controls -->
+    <div class="teacher-controls" id="teacherControls">
+      <button class="ctrl-btn" id="shareBtn" onclick="toggleScreenShare()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="16" height="11" rx="2"/><path d="M6 4V2h6v2"/></svg>
+        Share Screen
+      </button>
+      <button class="ctrl-btn" id="camBtn" onclick="toggleWebcam()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="4"/><circle cx="9" cy="9" r="7.5"/></svg>
+        Camera
+      </button>
+      <button class="ctrl-btn" id="recBtn" onclick="toggleRecording()">
+        <svg viewBox="0 0 18 18" fill="currentColor"><circle cx="9" cy="9" r="5"/></svg>
+        Record
+      </button>
+      <div class="ctrl-sep"></div>
+      <button class="ctrl-btn" onclick="sendReaction('📢')"><span style="font-size:18px">📢</span>Alert</button>
+      <button class="ctrl-btn" onclick="clearHands()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 1v9M6 3v7M12 3v7M3 8a3 3 0 006 6 3 3 0 006-6"/><path d="M3 15l12-12"/></svg>
+        Clear Hands
+      </button>
+      <button class="ctrl-btn" onclick="toggleQABanner()">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="7.5"/><path d="M9 6v3l2 2"/></svg>
+        Show Q&A
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- End Session Modal -->
+<div class="modal-overlay" id="endModal">
+  <div class="modal">
+    <div class="modal-icon" id="endModalIcon">👋</div>
+    <div class="modal-title" id="endModalTitle">Leave Session?</div>
+    <div class="modal-body" id="endModalBody">Are you sure you want to leave? The session will continue without you.</div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeModal()">Stay</button>
+      <button class="modal-btn confirm" id="endModalConfirm" onclick="endSession()">Leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toastIcon"></span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const sessionId = params.get('id') || '1';
+const demoRole = sessionStorage.getItem('ki_demo_role') || 'student';
+const demoName = sessionStorage.getItem('ki_demo_name') || 'Demo Student';
+const isTeacher = demoRole === 'teacher' || demoRole === 'admin';
+
+let currentUser = null;
+let userName = demoName;
+let userInitials = demoName.split(' ').map(n=>n[0]).join('').toUpperCase();
+
+let sessionSeconds = 0;
+let sessionTimerInterval = null;
+
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingStream = null;
+let webcamStream = null;
+let isRecording = false;
+let recSeconds = 0;
+let recTimerInterval = null;
+
+let isScreenSharing = false;
+let isWebcamOn = false;
+let isMuted = false;
+let handRaised = false;
+
+let participants = [];
+let messages = [];
+let questions = [];
+let activePoll = null;
+
+// ── Init ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    currentUser = await getUser();
+  } catch(e) {}
+
+  // Setup UI based on role
+  if (isTeacher) {
+    document.getElementById('teacherControls').classList.add('visible');
+    document.getElementById('studentControls').style.display = 'none';
+    document.getElementById('endBtnLabel').textContent = 'End Session';
+    document.getElementById('stageSubtitle').textContent = 'Click "Share Screen" to start presenting.';
+    document.getElementById('sessionTitle').textContent = 'Security+ Domain 1: Threats & Vulnerabilities';
+  } else {
+    document.getElementById('sessionTitle').textContent = 'Security+ Domain 1: Threats & Vulnerabilities';
+  }
+
+  // Start session timer
+  startSessionTimer();
+
+  // Load demo data
+  loadDemoParticipants();
+  loadDemoMessages();
+  loadDemoQuestions();
+  loadDemoPoll();
+
+  // Subscribe to realtime
+  subscribeToSession();
+
+  // Log attendance
+  logAttendance();
+
+  showToast('✅', `Joined session as ${isTeacher ? 'Teacher' : 'Student'}`);
+});
+
+// ── Timer ────────────────────────────────────────────
+function startSessionTimer() {
+  sessionTimerInterval = setInterval(() => {
+    sessionSeconds++;
+    const m = Math.floor(sessionSeconds / 60);
+    const s = sessionSeconds % 60;
+    document.getElementById('sessionTimer').textContent =
+      `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ── Demo data ─────────────────────────────────────────
+function loadDemoParticipants() {
+  participants = [
+    { id: 'teacher1', name: 'Mr. Hassan', role: 'teacher', hand: false },
+    { id: 'u1', name: 'Faadumo Ahmed', role: 'student', hand: true },
+    { id: 'u2', name: 'Ahmed Mohamed', role: 'student', hand: false },
+    { id: 'u3', name: 'Hodan Ibrahim', role: 'student', hand: false },
+    { id: 'u4', name: 'Omar Hassan', role: 'student', hand: false },
+    { id: 'u5', name: 'Safia Abdi', role: 'student', hand: false },
+    { id: 'demo', name: demoName, role: demoRole, hand: false },
+  ];
+  renderParticipants();
+  updateCount();
+}
+
+function loadDemoMessages() {
+  const msgs = [
+    { id: 1, name: 'Mr. Hassan', role: 'teacher', text: 'Welcome everyone! Today we cover Domain 1 threats and vulnerabilities.', time: nowTime(), pinned: true },
+    { id: 2, name: 'Faadumo Ahmed', role: 'student', text: 'Ready! This is the section I needed most for the exam.', time: nowTime() },
+    { id: 3, name: 'Ahmed Mohamed', role: 'student', text: 'Same here 🔥', time: nowTime() },
+  ];
+  msgs.forEach(m => addMessageToUI(m));
+}
+
+function loadDemoQuestions() {
+  questions = [
+    { id: 1, asker: 'Ahmed Mohamed', text: 'What is the difference between a threat actor and a vulnerability?', upvotes: 4, answered: false, time: nowTime() },
+    { id: 2, asker: 'Hodan Ibrahim', text: 'Will zero-day exploits be on the exam?', upvotes: 2, answered: true, time: nowTime() },
+  ];
+  renderQuestions();
+  updateQABadge();
+}
+
+function loadDemoPoll() {
+  activePoll = {
+    question: 'Which threat category concerns you most?',
+    options: [
+      { label: 'Phishing / Social Engineering', votes: 8, color: '' },
+      { label: 'Malware & Ransomware', votes: 12, color: 'gold' },
+      { label: 'Insider Threats', votes: 3, color: 'purple' },
+      { label: 'Zero-Day Exploits', votes: 7, color: 'green' },
+    ],
+    total: 30,
+    myVote: null
+  };
+  renderPoll();
+}
+
+// ── Render helpers ────────────────────────────────────
+function renderParticipants() {
+  const el = document.getElementById('participantsList');
+  el.innerHTML = participants.map(p => {
+    const initials = p.name.split(' ').map(n=>n[0]).join('').toUpperCase();
+    return `
+      <div class="participant-item ${p.hand ? 'hand-raised' : ''}">
+        <div class="p-avatar ${p.role === 'teacher' ? 'teacher-av' : ''}">${initials}</div>
+        <div class="p-name">${p.name}${p.id === 'demo' ? ' (You)' : ''}</div>
+        ${p.hand ? '<div class="p-hand">✋</div>' : ''}
+        <div class="p-role ${p.role}">${p.role}</div>
+      </div>`;
+  }).join('');
+}
+
+function updateCount() {
+  document.getElementById('participantCount').textContent = participants.length;
+}
+
+function addMessageToUI(msg) {
+  const el = document.getElementById('chatMessages');
+  const initials = msg.name.split(' ').map(n=>n[0]).join('').toUpperCase();
+  const div = document.createElement('div');
+  div.className = `chat-msg ${msg.role === 'teacher' ? 'teacher' : ''}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${initials}</div>
+    <div class="msg-body ${msg.pinned ? 'msg-pinned' : ''}">
+      <div class="msg-header">
+        <span class="msg-name ${msg.role === 'teacher' ? 'teacher-name' : ''}">${msg.name}</span>
+        <span class="msg-time">${msg.time}</span>
+        ${msg.pinned ? '<span style="font-size:10px;color:var(--purple);margin-left:auto">📌 Pinned</span>' : ''}
+      </div>
+      <div class="msg-text">${msg.text}</div>
+    </div>`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function addSystemMsg(text) {
+  const el = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'system-msg';
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderQuestions() {
+  const el = document.getElementById('qaList');
+  if (!questions.length) {
+    el.innerHTML = '<div class="no-poll" style="padding:30px 16px">No questions yet. Be the first to ask!</div>';
+    return;
+  }
+  el.innerHTML = questions.map(q => `
+    <div class="qa-item ${q.answered ? 'answered' : ''}">
+      <div class="qa-header">
+        <div class="msg-avatar" style="width:22px;height:22px;font-size:9px">${q.asker.split(' ').map(n=>n[0]).join('')}</div>
+        <span class="qa-asker">${q.asker}</span>
+        <span class="qa-time">${q.time}</span>
+      </div>
+      <div class="qa-question">${q.text}</div>
+      <div class="qa-actions">
+        ${isTeacher ? `
+          <button class="qa-btn ${q.answered ? 'done' : 'answer'}" onclick="markAnswered(${q.id})">
+            ${q.answered ? '✓ Answered' : 'Answer'}
+          </button>
+          <button class="qa-btn answer" onclick="pinQuestion(${q.id})" style="margin-left:4px">Pin to Chat</button>
+        ` : ''}
+        <div class="qa-upvote" onclick="upvoteQuestion(${q.id})">
+          ▲ <span id="upvote-${q.id}">${q.upvotes}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function renderPoll() {
+  const el = document.getElementById('pollWrap');
+  if (!activePoll) { el.innerHTML = '<div class="no-poll" id="noPoll"><span style="font-size:32px;display:block;margin-bottom:8px">📊</span>No active poll right now.</div>'; return; }
+
+  const total = activePoll.total || 1;
+  el.innerHTML = `
+    <div class="poll-card">
+      <div class="poll-question">${activePoll.question}</div>
+      ${activePoll.options.map((opt, i) => {
+        const pct = Math.round((opt.votes / total) * 100);
+        return `
+          <div class="poll-option ${activePoll.myVote === i ? 'selected' : ''}" onclick="votePoll(${i})">
+            <div class="poll-option-label">
+              <span>${opt.label}</span>
+              <span>${pct}%</span>
+            </div>
+            <div class="poll-bar-wrap">
+              <div class="poll-bar ${opt.color}" style="width:${pct}%"></div>
+            </div>
+          </div>`;
+      }).join('')}
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">${total} responses</div>
+    </div>`;
+}
+
+function updateQABadge() {
+  const unanswered = questions.filter(q => !q.answered).length;
+  const badge = document.getElementById('qaBadge');
+  badge.style.display = unanswered > 0 ? 'flex' : 'none';
+  badge.textContent = unanswered;
+}
+
+// ── Chat ─────────────────────────────────────────────
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const msg = { id: Date.now(), name: demoName, role: demoRole, text, time: nowTime() };
+  addMessageToUI(msg);
+  input.value = '';
+  input.style.height = '40px';
+
+  try {
+    supabaseClient.from('kic_messages').insert({ session_id: sessionId, sender_name: demoName, content: text, role: demoRole });
+  } catch(e) {}
+}
+
+function insertEmoji(emoji) {
+  const input = document.getElementById('chatInput');
+  input.value += emoji;
+  input.focus();
+}
+
+// ── Reactions ─────────────────────────────────────────
+function sendReaction(emoji) {
+  const overlay = document.getElementById('reactionsOverlay');
+  const bubble = document.createElement('div');
+  bubble.className = 'reaction-bubble';
+  bubble.textContent = emoji;
+  overlay.appendChild(bubble);
+  setTimeout(() => bubble.remove(), 2500);
+
+  addSystemMsg(`${demoName} reacted ${emoji}`);
+}
+
+// ── Hand raise ────────────────────────────────────────
+function toggleHand() {
+  handRaised = !handRaised;
+  const btn = document.getElementById('handBtn');
+  btn.classList.toggle('active', handRaised);
+  btn.lastChild.textContent = handRaised ? 'Lower Hand' : 'Raise Hand';
+
+  const me = participants.find(p => p.id === 'demo');
+  if (me) { me.hand = handRaised; renderParticipants(); }
+
+  if (handRaised) {
+    const chip = document.createElement('div');
+    chip.className = 'hand-chip';
+    chip.id = 'hand-demo';
+    chip.innerHTML = `✋ ${demoName}`;
+    document.getElementById('handsOverlay').appendChild(chip);
+    showToast('✋', 'Hand raised — teacher will call on you');
+  } else {
+    document.getElementById('hand-demo')?.remove();
+  }
+}
+
+function clearHands() {
+  participants.forEach(p => p.hand = false);
+  renderParticipants();
+  document.getElementById('handsOverlay').innerHTML = '';
+  showToast('✅', 'All hands cleared');
+}
+
+// ── Q&A ──────────────────────────────────────────────
+function submitQuestion() {
+  const input = document.getElementById('qaInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  questions.unshift({ id: Date.now(), asker: demoName, text, upvotes: 0, answered: false, time: nowTime() });
+  input.value = '';
+  renderQuestions();
+  updateQABadge();
+  showToast('❓', 'Question submitted');
+}
+
+function upvoteQuestion(id) {
+  const q = questions.find(x => x.id === id);
+  if (q) { q.upvotes++; document.getElementById(`upvote-${id}`).textContent = q.upvotes; }
+}
+
+function markAnswered(id) {
+  const q = questions.find(x => x.id === id);
+  if (q) {
+    q.answered = !q.answered;
+    renderQuestions();
+    updateQABadge();
+    showToast('✅', q.answered ? 'Marked as answered' : 'Marked as unanswered');
+  }
+}
+
+function pinQuestion(id) {
+  const q = questions.find(x => x.id === id);
+  if (!q) return;
+  addMessageToUI({ id: Date.now(), name: '📌 Pinned Question', role: 'teacher', text: q.text, time: nowTime(), pinned: true });
+  document.getElementById('qaBannerText').innerHTML = `Answering: <strong>${q.text}</strong>`;
+  document.getElementById('qaBanner').classList.add('active');
+  switchTab('chat');
+  showToast('📌', 'Question pinned to chat');
+}
+
+function toggleQABanner() {
+  document.getElementById('qaBanner').classList.toggle('active');
+}
+
+// ── Poll ─────────────────────────────────────────────
+function votePoll(idx) {
+  if (activePoll.myVote !== null) { showToast('ℹ️', 'You already voted'); return; }
+  activePoll.myVote = idx;
+  activePoll.options[idx].votes++;
+  activePoll.total++;
+  renderPoll();
+  showToast('📊', 'Vote recorded!');
+}
+
+// ── Screen share ──────────────────────────────────────
+async function toggleScreenShare() {
+  if (!isScreenSharing) {
+    try {
+      recordingStream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always' }, audio: true });
+      const video = document.getElementById('screenVideo');
+      video.srcObject = recordingStream;
+      video.style.display = 'block';
+      document.getElementById('stagePlaceholder').style.display = 'none';
+
+      recordingStream.getVideoTracks()[0].onended = () => stopShare();
+
+      isScreenSharing = true;
+      const btn = document.getElementById('shareBtn');
+      btn.classList.add('active');
+      btn.lastChild.textContent = 'Stop Share';
+      showToast('🖥️', 'Screen sharing started');
+      addSystemMsg('Teacher started screen sharing');
+    } catch(e) {
+      if (e.name !== 'NotAllowedError') showToast('❌', 'Could not share screen');
+    }
+  } else {
+    stopShare();
+  }
+}
+
+function stopShare() {
+  recordingStream?.getTracks().forEach(t => t.stop());
+  document.getElementById('screenVideo').style.display = 'none';
+  document.getElementById('stagePlaceholder').style.display = 'block';
+  isScreenSharing = false;
+  const btn = document.getElementById('shareBtn');
+  btn.classList.remove('active');
+  btn.lastChild.textContent = 'Share Screen';
+  addSystemMsg('Teacher stopped screen sharing');
+}
+
+// ── Webcam ────────────────────────────────────────────
+async function toggleWebcam() {
+  if (!isWebcamOn) {
+    try {
+      webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const video = document.getElementById('webcamVideo');
+      video.srcObject = webcamStream;
+      video.style.display = 'block';
+      isWebcamOn = true;
+      document.getElementById('camBtn').classList.add('active');
+      document.getElementById('camBtn').lastChild.textContent = 'Camera On';
+      showToast('📷', 'Camera enabled');
+    } catch(e) { showToast('❌', 'Camera not available'); }
+  } else {
+    webcamStream?.getTracks().forEach(t => t.stop());
+    document.getElementById('webcamVideo').style.display = 'none';
+    isWebcamOn = false;
+    document.getElementById('camBtn').classList.remove('active');
+    document.getElementById('camBtn').lastChild.textContent = 'Camera';
+    showToast('📷', 'Camera off');
+  }
+}
+
+// ── Recording ─────────────────────────────────────────
+async function toggleRecording() {
+  if (!isRecording) {
+    if (!isScreenSharing) {
+      showToast('⚠️', 'Share your screen first before recording');
+      return;
+    }
+    startRecording();
+  } else {
+    stopRecording();
+  }
+}
+
+function startRecording() {
+  try {
+    const tracks = [...(recordingStream?.getTracks() || [])];
+    if (webcamStream) webcamStream.getAudioTracks().forEach(t => tracks.push(t));
+    const combinedStream = new MediaStream(tracks);
+
+    mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
+    recordedChunks = [];
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = saveRecording;
+    mediaRecorder.start(1000);
+
+    isRecording = true;
+    recSeconds = 0;
+
+    document.getElementById('recBtn').classList.add('recording');
+    document.getElementById('recBtn').lastChild.textContent = 'Stop Rec';
+    document.getElementById('recTimerOverlay').classList.add('active');
+
+    recTimerInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds / 60);
+      const s = recSeconds % 60;
+      document.getElementById('recTimerText').textContent = `REC ${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }, 1000);
+
+    showToast('🔴', 'Recording started');
+    addSystemMsg('Session recording started');
+  } catch(e) {
+    showToast('❌', 'Recording failed: ' + e.message);
+  }
+}
+
+function stopRecording() {
+  mediaRecorder?.stop();
+  clearInterval(recTimerInterval);
+  isRecording = false;
+
+  document.getElementById('recBtn').classList.remove('recording');
+  document.getElementById('recBtn').lastChild.textContent = 'Record';
+  document.getElementById('recTimerOverlay').classList.remove('active');
+
+  addSystemMsg('Recording stopped — saving...');
+  showToast('💾', 'Saving recording...');
+}
+
+function saveRecording() {
+  const blob = new Blob(recordedChunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `KI-Session-${sessionId}-${new Date().toISOString().slice(0,10)}.webm`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅', 'Recording saved!');
+}
+
+// ── Mic ───────────────────────────────────────────────
+function toggleMic() {
+  isMuted = !isMuted;
+  const btn = document.getElementById('micBtn');
+  btn.classList.toggle('active', isMuted);
+  btn.lastChild.textContent = isMuted ? 'Unmute' : 'Mute';
+  showToast(isMuted ? '🔇' : '🎤', isMuted ? 'Microphone muted' : 'Microphone on');
+}
+
+// ── Sidebar tabs ──────────────────────────────────────
+function switchTab(id) {
+  document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'chat') document.getElementById('chatBadge').style.display = 'none';
+}
+
+// ── End session ───────────────────────────────────────
+function confirmEnd() {
+  const modal = document.getElementById('endModal');
+  if (isTeacher) {
+    document.getElementById('endModalIcon').textContent = '🔴';
+    document.getElementById('endModalTitle').textContent = 'End Session?';
+    document.getElementById('endModalBody').textContent = 'This will end the session for all participants. Any ongoing recording will be saved automatically.';
+    document.getElementById('endModalConfirm').textContent = 'End for Everyone';
+  }
+  modal.classList.add('open');
+}
+
+function closeModal() { document.getElementById('endModal').classList.remove('open'); }
+
+async function endSession() {
+  if (isRecording) stopRecording();
+  stopShare();
+  clearInterval(sessionTimerInterval);
+
+  try {
+    await supabaseClient.from('kic_sessions').update({ status: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
+  } catch(e) {}
+
+  window.location.href = isTeacher ? 'teacher.html' : 'dashboard.html';
+}
+
+// ── Fullscreen ────────────────────────────────────────
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.getElementById('stage').requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// ── Attendance ────────────────────────────────────────
+async function logAttendance() {
+  try {
+    await supabaseClient.from('kic_attendance').upsert({
+      session_id: sessionId,
+      user_id: currentUser?.id || 'demo',
+      user_name: demoName,
+      joined_at: new Date().toISOString(),
+      status: 'present'
+    });
+  } catch(e) {}
+}
+
+// ── Realtime ──────────────────────────────────────────
+function subscribeToSession() {
+  try {
+    supabaseClient
+      .channel(`session-${sessionId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'kic_messages', filter: `session_id=eq.${sessionId}` }, payload => {
+        const msg = payload.new;
+        if (msg.sender_name === demoName) return;
+        addMessageToUI({ id: msg.id, name: msg.sender_name, role: msg.role || 'student', text: msg.content, time: nowTime() });
+        if (document.getElementById('panel-chat').classList.contains('active') === false) {
+          const badge = document.getElementById('chatBadge');
+          badge.style.display = 'flex';
+          badge.textContent = parseInt(badge.textContent || '0') + 1;
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'kic_sessions', filter: `id=eq.${sessionId}` }, payload => {
+        if (payload.new?.status === 'ended' && !isTeacher) {
+          showToast('🔴', 'Session ended by teacher');
+          setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+        }
+      })
+      .subscribe();
+  } catch(e) {}
+}
+
+// ── Helpers ───────────────────────────────────────────
+function nowTime() {
+  return new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+}
+
+function showToast(icon, msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
