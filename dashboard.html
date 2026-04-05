@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://YOUR_PROJECT_URL.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function getUser() { const { data: { user } } = await supabaseClient.auth.getUser(); return user; }
+async function signOut() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+async function getUserProfile(uid) { const { data } = await supabaseClient.from("profiles").select("*").eq("id", uid).single(); return data; }
+</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1442,8 +1451,8 @@
   <span id="toastMsg"></span>
 </div>
 
-<script src="js/supabase.js"></script>
-<script src="js/auth.js"></script>
+
+
 <script>
 
 let currentUser = null;
@@ -1854,5 +1863,7 @@ document.addEventListener('click', (e) => {
 });
 
 </script>
+<script>
+// ── Supabase init ── Replace with your real values from Supabase > Project Settings > API
 </body>
 </html>

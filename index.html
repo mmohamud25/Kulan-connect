@@ -8,6 +8,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://YOUR_PROJECT_URL.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function getUser() { const { data: { user } } = await supabaseClient.auth.getUser(); return user; }
+async function signOut() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+async function getUserProfile(uid) { const { data } = await supabaseClient.from("profiles").select("*").eq("id", uid).single(); return data; }
+</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,7 +40,6 @@
       font-weight: 400;
     }
 
-    /* Background grid */
     body::before {
       content: '';
       position: fixed;
@@ -44,7 +52,6 @@
       z-index: 0;
     }
 
-    /* Glow orb */
     body::after {
       content: '';
       position: fixed;
@@ -69,7 +76,6 @@
       padding: 24px;
     }
 
-    /* Logo area */
     .brand {
       text-align: center;
       margin-bottom: 40px;
@@ -89,10 +95,7 @@
       position: relative;
     }
 
-    .brand-mark svg {
-      width: 28px;
-      height: 28px;
-    }
+    .brand-mark svg { width: 28px; height: 28px; }
 
     .pulse-ring {
       position: absolute;
@@ -115,9 +118,7 @@
       color: var(--text);
     }
 
-    .brand h1 span {
-      color: var(--cyan);
-    }
+    .brand h1 span { color: var(--cyan); }
 
     .brand p {
       margin-top: 6px;
@@ -127,7 +128,6 @@
       letter-spacing: 0.3px;
     }
 
-    /* Card */
     .card {
       width: 100%;
       max-width: 420px;
@@ -138,7 +138,6 @@
       animation: fadeUp 0.6s 0.1s ease both;
     }
 
-    /* Tabs */
     .tabs {
       display: flex;
       background: var(--bg);
@@ -168,7 +167,6 @@
       border: 1px solid rgba(0,212,200,0.25);
     }
 
-    /* Forms */
     .form { display: none; flex-direction: column; gap: 16px; }
     .form.active { display: flex; }
 
@@ -216,8 +214,6 @@
       letter-spacing: 0.3px;
       transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
       margin-top: 4px;
-      position: relative;
-      overflow: hidden;
     }
 
     .btn:hover {
@@ -227,12 +223,7 @@
     }
 
     .btn:active { transform: translateY(0); }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
     .btn .spinner {
       display: none;
@@ -250,7 +241,6 @@
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Alert */
     .alert {
       padding: 12px 14px;
       border-radius: 9px;
@@ -272,25 +262,6 @@
       color: var(--cyan);
     }
 
-    /* Divider */
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 12px;
-      margin: 4px 0;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* Footer */
     .footer {
       margin-top: 32px;
       text-align: center;
@@ -299,12 +270,8 @@
       animation: fadeUp 0.6s 0.2s ease both;
     }
 
-    .footer a {
-      color: var(--cyan);
-      text-decoration: none;
-    }
+    .footer a { color: var(--cyan); text-decoration: none; }
 
-    /* Badges */
     .badges {
       display: flex;
       justify-content: center;
@@ -373,7 +340,6 @@
         <button class="tab" onclick="switchTab('signup')">Create Account</button>
       </div>
 
-      <!-- Login Form -->
       <div class="form active" id="loginForm">
         <div id="loginAlert" class="alert"></div>
         <div class="field">
@@ -390,7 +356,6 @@
         </button>
       </div>
 
-      <!-- Signup Form -->
       <div class="form" id="signupForm">
         <div id="signupAlert" class="alert"></div>
         <div class="field">
@@ -423,9 +388,8 @@
 
   </div>
 
-  <script src="js/supabase.js"></script>
+  
   <script>
-    // Tab switcher
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach((t, i) => {
         t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'signup'));
@@ -447,16 +411,12 @@
     }
 
     function clearAlert(id) {
-      const el = document.getElementById(id);
-      el.className = 'alert';
+      document.getElementById(id).className = 'alert';
     }
 
-    // Check if already logged in
     window.addEventListener('DOMContentLoaded', async () => {
       const { data: { user } } = await supabaseClient.auth.getUser();
-      if (user) {
-        redirectByRole(user);
-      }
+      if (user) redirectByRole(user);
     });
 
     async function redirectByRole(user) {
@@ -530,7 +490,6 @@
       setLoading('signupBtn', false);
     }
 
-    // Enter key support
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const loginActive = document.getElementById('loginForm').classList.contains('active');
@@ -539,5 +498,7 @@
       }
     });
   </script>
+<script>
+// ── Supabase init ── Replace with your real values from Supabase > Project Settings > API
 </body>
 </html>
