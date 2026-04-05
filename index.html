@@ -314,6 +314,17 @@ async function getUserProfile(uid) { const { data } = await supabaseClient.from(
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    .divider { display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:4px 0; }
+    .divider::before,.divider::after { content:'';flex:1;height:1px;background:var(--border); }
+    .demo-btn {
+      flex:1;padding:10px 8px;border-radius:9px;border:1px solid var(--cyan-border);
+      background:var(--cyan-dim);color:var(--cyan);font-family:'DM Sans',sans-serif;
+      font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;
+      display:flex;align-items:center;justify-content:center;gap:6px;
+    }
+    .demo-btn:hover { background:rgba(0,212,200,0.18); }
+    .demo-btn svg { width:13px;height:13px; }
   </style>
 </head>
 <body>
@@ -354,6 +365,17 @@ async function getUserProfile(uid) { const { data } = await supabaseClient.from(
           <span class="btn-text">Sign In</span>
           <div class="spinner"></div>
         </button>
+        <div class="divider">or try demo</div>
+        <div style="display:flex;gap:10px">
+          <button class="demo-btn" onclick="demoLogin('student')">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="5" r="3"/><path d="M1 13c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>
+            Student Demo
+          </button>
+          <button class="demo-btn" onclick="demoLogin('teacher')" style="border-color:rgba(240,180,41,0.4);color:#f0b429;background:rgba(240,180,41,0.08)">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 11V4l6-2 6 2v7"/><path d="M7 2v9M3 7h8"/></svg>
+            Teacher Demo
+          </button>
+        </div>
       </div>
 
       <div class="form" id="signupForm">
@@ -414,9 +436,19 @@ async function getUserProfile(uid) { const { data } = await supabaseClient.from(
       document.getElementById(id).className = 'alert';
     }
 
+
+    function demoLogin(role) {
+      sessionStorage.setItem('ki_demo_role', role);
+      sessionStorage.setItem('ki_demo_name', role === 'teacher' ? 'Demo Teacher' : 'Demo Student');
+      if (role === 'teacher') window.location.href = 'teacher.html';
+      else window.location.href = 'dashboard.html';
+    }
     window.addEventListener('DOMContentLoaded', async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (user) redirectByRole(user);
+      if (sessionStorage.getItem('ki_demo_role')) { sessionStorage.removeItem('ki_demo_role'); return; }
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) redirectByRole(user);
+      } catch(e) {}
     });
 
     async function redirectByRole(user) {

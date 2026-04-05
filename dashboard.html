@@ -1461,10 +1461,16 @@ let notifOpen = false;
 
 // ─── Init ───────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  currentUser = await getUser();
-  if (!currentUser) { window.location.href = 'index.html'; return; }
-
-  currentProfile = await getUserProfile(currentUser.id);
+  const demoRole = sessionStorage.getItem('ki_demo_role');
+  const demoName = sessionStorage.getItem('ki_demo_name') || 'Demo Student';
+  if (demoRole) {
+    currentUser = { id: 'demo', email: 'demo@kulaninstitute.org' };
+    currentProfile = { full_name: demoName, role: demoRole };
+  } else {
+    currentUser = await getUser();
+    if (!currentUser) { window.location.href = 'index.html'; return; }
+    currentProfile = await getUserProfile(currentUser.id);
+  }
   renderProfile();
   loadAllData();
   buildStreakUI();
@@ -1808,12 +1814,12 @@ function buildNotifications() {
 
 // ─── Realtime ────────────────────────────────────────
 function subscribeToLiveSessions() {
-  supabaseClient
+  try { supabaseClient
     .channel('kic_sessions')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'kic_sessions' }, () => {
       loadUpcomingSessions();
     })
-    .subscribe();
+    .subscribe(); } catch(e) {}
 }
 
 // ─── Actions ─────────────────────────────────────────
@@ -1852,6 +1858,8 @@ function showToast(msg, type = 'success') {
 }
 
 async function handleSignOut() {
+  sessionStorage.removeItem("ki_demo_role");
+  sessionStorage.removeItem("ki_demo_name");
   await signOut();
 }
 

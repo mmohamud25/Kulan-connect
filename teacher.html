@@ -1391,11 +1391,17 @@ let recordings = [];
 
 // ─── Init ────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-  currentUser = await getUser();
-  if (!currentUser) { window.location.href = 'index.html'; return; }
-
-  const profile = await getUserProfile(currentUser.id);
-  const name = profile?.full_name || currentUser.email.split('@')[0];
+  const demoRole = sessionStorage.getItem('ki_demo_role');
+  const demoName = sessionStorage.getItem('ki_demo_name') || 'Demo Teacher';
+  if (demoRole) {
+    currentUser = { id: 'demo', email: 'demo@kulaninstitute.org' };
+    var name = demoName;
+  } else {
+    currentUser = await getUser();
+    if (!currentUser) { window.location.href = 'index.html'; return; }
+    const profile = await getUserProfile(currentUser.id);
+    var name = profile?.full_name || currentUser.email.split('@')[0];
+  }
   const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   document.getElementById('teacherName').textContent = name;
   document.getElementById('teacherAvatar').textContent = initials;
@@ -1961,17 +1967,17 @@ function showToast(msg, type = 'success') {
 }
 
 // ─── Sign out ────────────────────────────────────────
-async function handleSignOut() { await signOut(); }
+async function handleSignOut() { sessionStorage.removeItem("ki_demo_role"); sessionStorage.removeItem("ki_demo_name"); await signOut(); }
 
 // ─── Realtime ────────────────────────────────────────
-supabaseClient && supabaseClient
+try { if(supabaseClient) supabaseClient
   .channel('kic_teacher')
   .on('postgres_changes', { event:'INSERT', schema:'public', table:'kic_messages' }, payload => {
     const { content, sender_id } = payload.new;
     if (sender_id === currentUser?.id) return;
     document.getElementById('chatBadge').style.display = 'inline-block';
   })
-  .subscribe();
+  .subscribe(); } catch(e) {}
 
 </script>
 <script>
