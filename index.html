@@ -444,7 +444,9 @@ async function getUserProfile(uid) { const { data } = await supabaseClient.from(
       else window.location.href = 'dashboard.html';
     }
     window.addEventListener('DOMContentLoaded', async () => {
-      if (sessionStorage.getItem('ki_demo_role')) { sessionStorage.removeItem('ki_demo_role'); return; }
+      // Clear any leftover demo flags on page load
+      sessionStorage.removeItem('ki_demo_role');
+      sessionStorage.removeItem('ki_demo_name');
       try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (user) redirectByRole(user);
@@ -452,15 +454,23 @@ async function getUserProfile(uid) { const { data } = await supabaseClient.from(
     });
 
     async function redirectByRole(user) {
-      const { data: profile } = await supabaseClient
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
+      // Clear demo flags whenever a real user logs in
+      sessionStorage.removeItem('ki_demo_role');
+      sessionStorage.removeItem('ki_demo_name');
 
-      if (profile?.role === 'teacher' || profile?.role === 'admin') {
-        window.location.href = 'teacher.html';
-      } else {
+      try {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.role === 'teacher' || profile?.role === 'admin') {
+          window.location.href = 'teacher.html';
+        } else {
+          window.location.href = 'dashboard.html';
+        }
+      } catch(e) {
         window.location.href = 'dashboard.html';
       }
     }
